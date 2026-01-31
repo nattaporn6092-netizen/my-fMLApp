@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Parrot Sky AI</title>
+
+<style>
+*{
+  box-sizing:border-box;
+  font-family:'Segoe UI', sans-serif;
+}
+
+body{
+  margin:0;
+  min-height:100vh;
+  overflow:hidden;
+  background:linear-gradient(#81d4fa, #e3f2fd);
+}
+
+/* เมฆลอย */
+.cloud{
+  position:fixed;
+  top:50px;
+  left:-200px;
+  font-size:80px;
+  animation:cloudMove 25s linear infinite;
+}
+
+@keyframes cloudMove{
+  0%{left:-200px;}
+  100%{left:110%;}
+}
+
+/* นกแก้วบิน */
+.parrot{
+  position:fixed;
+  top:150px;
+  left:-100px;
+  font-size:70px;
+  animation:fly 12s linear infinite;
+}
+
+@keyframes fly{
+  0%{left:-100px;}
+  50%{top:80px;}
+  100%{left:110%; top:150px;}
+}
+
+/* เมนู */
+.nav{
+  display:flex;
+  justify-content:center;
+  background:#0288d1;
+  z-index:10;
+  position:relative;
+}
+
+.nav button{
+  background:none;
+  border:none;
+  color:white;
+  padding:15px 30px;
+  cursor:pointer;
+  font-size:16px;
+}
+
+.nav button.active,
+.nav button:hover{
+  background:#4fc3f7;
+}
+
+/* เนื้อหา */
+.tab{
+  display:none;
+  min-height:80vh;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  text-align:center;
+  position:relative;
+  z-index:5;
+}
+
+.card{
+  background:white;
+  padding:40px;
+  border-radius:20px;
+  width:90%;
+  max-width:600px;
+  box-shadow:0 8px 25px rgba(0,0,0,0.2);
+}
+
+/* ปุ่ม */
+.upload-btn{
+  display:inline-block;
+  padding:12px 25px;
+  background:#0288d1;
+  color:white;
+  border-radius:25px;
+  cursor:pointer;
+  margin:20px 0;
+}
+.upload-btn:hover{
+  background:#4fc3f7;
+}
+</style>
+</head>
+
+<body>
+
+<!-- Animation background -->
+<div class="cloud">☁️☁️☁️</div>
+<div class="parrot">🦜</div>
+
+<!-- เมนู -->
+<div class="nav">
+  <button class="active" onclick="openTab('home', this)">Home</button>
+  <button onclick="openTab('check', this)">Check</button>
+  <button onclick="openTab('about', this)">About Us</button>
+</div>
+
+<!-- HOME -->
+<div id="home" class="tab">
+  <div class="card">
+    <h1>Parrot Sky AI Web App</h1>
+    <p>
+      เว็บแอปพลิเคชันภายใต้ธีมท้องฟ้าและนกแก้ว 🦜☁️<br>
+      สำหรับการทดลองใช้ปัญญาประดิษฐ์บนเว็บไซต์
+    </p>
+    <p>
+      พัฒนาเพื่อการศึกษาและสร้างสรรค์ผลงานด้านเทคโนโลยี
+    </p>
+  </div>
+</div>
+
+<!-- CHECK -->
+<div id="check" class="tab">
+  <div class="card">
+    <h2>AI Image Checker</h2>
+
+    <label for="imageUpload" class="upload-btn">
+      เลือกภาพ
+    </label>
+    <input type="file" id="imageUpload" accept="image/*" style="display:none;">
+
+    <div id="label-container"></div>
+  </div>
+</div>
+
+<!-- ABOUT -->
+<div id="about" class="tab">
+  <div class="card">
+    <h2>About This Project</h2>
+    <p>
+      เว็บแอปพลิเคชันนี้จัดทำขึ้นเพื่อเป็น Portfolio<br>
+      แสดงทักษะการพัฒนา Web Application
+    </p>
+    <p>
+      มีการใช้ CSS Animation เพื่อสร้างภาพเคลื่อนไหว<br>
+      และประยุกต์ใช้ AI สำหรับการประมวลผลภาพ
+    </p>
+    <p>
+      Technology: HTML, CSS, JavaScript,<br>
+      TensorFlow.js, Teachable Machine
+    </p>
+  </div>
+</div>
+
+<!-- เมนูสลับหน้า -->
+<script>
+function openTab(tabName, btn){
+  let tabs = document.getElementsByClassName("tab");
+  for(let i=0;i<tabs.length;i++){
+    tabs[i].style.display="none";
+  }
+
+  let buttons = document.querySelectorAll(".nav button");
+  buttons.forEach(b=>b.classList.remove("active"));
+
+  document.getElementById(tabName).style.display="flex";
+  btn.classList.add("active");
+}
+
+document.getElementById("home").style.display="flex";
+</script>
+
+<!-- AI -->
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest/dist/tf.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@teachablemachine/image@latest/dist/teachablemachine-image.min.js"></script>
+
+<script>
+const URL = "https://teachablemachine.withgoogle.com/models/3ucuo8OV9/";
+let model;
+
+async function init() {
+  const modelURL = URL + "model.json";
+  const metadataURL = URL + "metadata.json";
+  model = await tmImage.load(modelURL, metadataURL);
+}
+init();
+
+document.getElementById("imageUpload").addEventListener("change", function(e){
+  const file = e.target.files[0];
+  const reader = new FileReader();
+
+  reader.onload = function(){
+    const img = new Image();
+    img.src = reader.result;
+    img.onload = ()=> predict(img);
+  }
+  reader.readAsDataURL(file);
+});
+
+async function predict(image){
+  const prediction = await model.predict(image);
+
+  let maxIndex = 0;
+  for(let i=1;i<prediction.length;i++){
+    if(prediction[i].probability > prediction[maxIndex].probability){
+      maxIndex = i;
+    }
+  }
+
+  const bestClass = prediction[maxIndex].className;
+  const bestProb = prediction[maxIndex].probability.toFixed(2);
+
+  document.getElementById("label-container").innerHTML =
+    "<h3>ผลการทำนาย</h3>" +
+    bestClass + " (" + bestProb + ")";
+}
+</script>
+
+</body>
+</html>
